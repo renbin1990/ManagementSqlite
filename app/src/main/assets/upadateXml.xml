@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--二十五、数据库升级管理，配置数据库升级版本号-->
+<upadateXml>
+
+    <updateStep
+        versionFrom= "V001,V002"
+        versionTo= "V006">
+
+        <!--数据库语句-->
+
+    </updateStep>
+
+
+    <updateStep
+        versionFrom= "V003,V004,V005"
+        versionTo= "V006">
+
+        <updateDb name = "msg">
+            <!--表重命名-->
+            <sql_before>alter table tb_photo rename to bak_tb_photo;</sql_before>
+            <!--数据库插入-->
+            <sql_after>
+                insert into tb_photo(time,
+                path)
+                select time,path
+                form bak_tb_photo;
+            </sql_after>
+            <!--删除临时表-->
+            <sql_after>
+                drop table if exists bak_tb_photo;
+            </sql_after>
+        </updateDb>
+
+        <updateDb name = "user">
+
+        </updateDb>
+    </updateStep>
+
+</upadateXml>

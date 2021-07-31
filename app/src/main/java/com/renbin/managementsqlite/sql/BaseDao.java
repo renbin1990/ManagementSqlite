@@ -301,8 +301,8 @@ public class BaseDao<T> implements IBaseDao<T> {
     public List<T> query(T where, String groupBy, String having,
                          String orderBy, Integer startIndex, Integer limit) {
         String limitString = null;
-        if (startIndex != null && limit != null){
-            limitString = startIndex+ " , "+limit;
+        if (startIndex != null && limit != null) {
+            limitString = startIndex + " , " + limit;
         }
         //条件
         Map<String, String> whereMap = getValue(where);
@@ -312,16 +312,60 @@ public class BaseDao<T> implements IBaseDao<T> {
                 groupBy, having, orderBy, limitString
         );
         //封装  返回
-        List<T> result = getResult(cursor,where);
-
-        return null;
+        List<T> result = getResult(cursor, where);
+        cursor.close();
+        return result;
     }
 
+    /**
+     * 十九、
+     *
+     * @param cursor
+     * @param where
+     * @return
+     */
     private List<T> getResult(Cursor cursor, T where) {
-        ArrayList<T> list = new ArrayList<>();
-        while (cursor.moveToFirst()){
+        ArrayList list = new ArrayList<>();
+        Object item;
+        while (cursor.moveToNext()) {
+            try {
+                //反射获取bean类
+                item = where.getClass().newInstance();
+                //cacheMap 存了对象中的成员变量   cacheMap.put(columnName, resultField);
+                Iterator<Map.Entry<String, Field>> iterator = cacheMap.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, Field> entry = iterator.next();
+                    //得到列名
+                    String columnName = entry.getKey();
+                    //通过游标查询列名所在的位置
+                    Integer columnIndex = cursor.getColumnIndex(columnName);
+                    //获取反射的成员变量
+                    Field field = entry.getValue();
+                    Class<?> type = field.getType();
+                    if (columnIndex != -1) {
+                        if (type == String.class) {
+                            field.set(item, cursor.getString(columnIndex));
+                        } else if (type == Double.class) {
+                            field.set(item, cursor.getDouble(columnIndex));
+                        } else if (type == Integer.class) {
+                            field.set(item, cursor.getInt(columnIndex));
+                        } else if (type == Long.class) {
+                            field.set(item, cursor.getLong(columnIndex));
+                        } else if (type == byte[].class) {
+                            field.set(item, cursor.getBlob(columnIndex));
+                        } else {
+                            continue;
+                        }
+                    }
+                }
+                list.add(item);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            }
 
         }
-        return null;
+        return list;
     }
 }
